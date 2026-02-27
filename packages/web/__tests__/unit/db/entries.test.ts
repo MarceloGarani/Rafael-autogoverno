@@ -6,7 +6,7 @@ const mockRange = jest.fn();
 const mockOrder = jest.fn(() => ({ range: mockRange }));
 const mockLte = jest.fn(() => ({ order: mockOrder }));
 const mockGte = jest.fn(() => ({ order: mockOrder, lte: mockLte }));
-const mockEq = jest.fn((_col: string, _val: unknown) => ({
+const mockEq: jest.Mock = jest.fn((_col: string, _val: unknown) => ({
   order: mockOrder,
   eq: mockEq,
   gte: mockGte,
