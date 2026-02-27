@@ -1,0 +1,455 @@
+# =============================================================================
+# Diario de Autogoverno — Design Tokens
+# =============================================================================
+# DTCG-inspired token specification with 3 layers:
+#   1. Core     — Raw, immutable values (colors, spacing, typography, etc.)
+#   2. Semantic — Purpose-based aliases referencing core tokens
+#   3. Component — Pre-composed sets for specific UI components
+#
+# Design principles:
+#   - Dark mode as default
+#   - Palette: Black (#000), Red (#E53935 accents), White (#FFF)
+#   - Typography: Inter sans-serif
+#   - Spacing: 4px base unit
+#   - Mobile-first (mentee), desktop-first (mentor dashboard)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Layer 1: Core Tokens
+# -----------------------------------------------------------------------------
+core:
+  color:
+    black:
+      $value: "#000000"
+      $type: color
+    white:
+      $value: "#FFFFFF"
+      $type: color
+    red:
+      400:
+        $value: "#EF5350"
+        $type: color
+      500:
+        $value: "#E53935"
+        $type: color
+      600:
+        $value: "#C62828"
+        $type: color
+    neutral:
+      50:
+        $value: "#FAFAFA"
+        $type: color
+      100:
+        $value: "#F5F5F5"
+        $type: color
+      200:
+        $value: "#EEEEEE"
+        $type: color
+      300:
+        $value: "#E0E0E0"
+        $type: color
+      400:
+        $value: "#BDBDBD"
+        $type: color
+      500:
+        $value: "#9E9E9E"
+        $type: color
+      600:
+        $value: "#757575"
+        $type: color
+      700:
+        $value: "#616161"
+        $type: color
+      800:
+        $value: "#424242"
+        $type: color
+      900:
+        $value: "#212121"
+        $type: color
+      950:
+        $value: "#121212"
+        $type: color
+    green:
+      500:
+        $value: "#4CAF50"
+        $type: color
+      600:
+        $value: "#388E3C"
+        $type: color
+    yellow:
+      500:
+        $value: "#FFC107"
+        $type: color
+      600:
+        $value: "#F9A825"
+        $type: color
+
+  spacing:
+    0:
+      $value: "0px"
+      $type: dimension
+    1:
+      $value: "4px"
+      $type: dimension
+    2:
+      $value: "8px"
+      $type: dimension
+    3:
+      $value: "12px"
+      $type: dimension
+    4:
+      $value: "16px"
+      $type: dimension
+    5:
+      $value: "20px"
+      $type: dimension
+    6:
+      $value: "24px"
+      $type: dimension
+    8:
+      $value: "32px"
+      $type: dimension
+    10:
+      $value: "40px"
+      $type: dimension
+    12:
+      $value: "48px"
+      $type: dimension
+    16:
+      $value: "64px"
+      $type: dimension
+    20:
+      $value: "80px"
+      $type: dimension
+    24:
+      $value: "96px"
+      $type: dimension
+
+  typography:
+    family:
+      sans:
+        $value: "'Inter', ui-sans-serif, system-ui, sans-serif"
+        $type: fontFamily
+    size:
+      xs:
+        $value: "12px"
+        $type: dimension
+      sm:
+        $value: "14px"
+        $type: dimension
+      base:
+        $value: "16px"
+        $type: dimension
+      lg:
+        $value: "18px"
+        $type: dimension
+      xl:
+        $value: "20px"
+        $type: dimension
+      2xl:
+        $value: "24px"
+        $type: dimension
+      3xl:
+        $value: "30px"
+        $type: dimension
+      4xl:
+        $value: "36px"
+        $type: dimension
+    weight:
+      regular:
+        $value: 400
+        $type: fontWeight
+      medium:
+        $value: 500
+        $type: fontWeight
+      semibold:
+        $value: 600
+        $type: fontWeight
+      bold:
+        $value: 700
+        $type: fontWeight
+    lineHeight:
+      tight:
+        $value: 1.25
+        $type: number
+      snug:
+        $value: 1.375
+        $type: number
+      normal:
+        $value: 1.5
+        $type: number
+      relaxed:
+        $value: 1.625
+        $type: number
+      loose:
+        $value: 1.75
+        $type: number
+
+  radius:
+    none:
+      $value: "0px"
+      $type: dimension
+    sm:
+      $value: "4px"
+      $type: dimension
+    md:
+      $value: "8px"
+      $type: dimension
+    lg:
+      $value: "12px"
+      $type: dimension
+    xl:
+      $value: "16px"
+      $type: dimension
+    full:
+      $value: "9999px"
+      $type: dimension
+
+  shadow:
+    sm:
+      $value: "0 1px 2px rgba(0,0,0,0.3)"
+      $type: shadow
+    md:
+      $value: "0 4px 6px rgba(0,0,0,0.3)"
+      $type: shadow
+    lg:
+      $value: "0 10px 15px rgba(0,0,0,0.3)"
+      $type: shadow
+
+  transition:
+    fast:
+      $value: "150ms"
+      $type: duration
+    normal:
+      $value: "250ms"
+      $type: duration
+    slow:
+      $value: "350ms"
+      $type: duration
+
+  zIndex:
+    dropdown:
+      $value: 10
+      $type: number
+    sticky:
+      $value: 20
+      $type: number
+    modal:
+      $value: 30
+      $type: number
+    toast:
+      $value: 40
+      $type: number
+
+# -----------------------------------------------------------------------------
+# Layer 2: Semantic Tokens
+# Purpose-based aliases that reference core tokens.
+# These define the "meaning" of each token in the UI.
+# -----------------------------------------------------------------------------
+semantic:
+  bg:
+    primary:
+      $value: "{core.color.black}"
+      $type: color
+      $description: "Main app background"
+    secondary:
+      $value: "{core.color.neutral.950}"
+      $type: color
+      $description: "Secondary background (sidebar, panels)"
+    surface:
+      $value: "{core.color.neutral.900}"
+      $type: color
+      $description: "Card and elevated surface background"
+    surface-hover:
+      $value: "{core.color.neutral.800}"
+      $type: color
+      $description: "Hovered surface state"
+    accent:
+      $value: "{core.color.red.500}"
+      $type: color
+      $description: "Accent background (CTA buttons, highlights)"
+
+  text:
+    primary:
+      $value: "{core.color.white}"
+      $type: color
+      $description: "Primary text on dark backgrounds"
+    secondary:
+      $value: "{core.color.neutral.500}"
+      $type: color
+      $description: "Secondary/supporting text"
+    muted:
+      $value: "{core.color.neutral.600}"
+      $type: color
+      $description: "De-emphasized text (placeholders, hints)"
+    accent:
+      $value: "{core.color.red.500}"
+      $type: color
+      $description: "Accent-colored text (links, highlights)"
+    on-accent:
+      $value: "{core.color.white}"
+      $type: color
+      $description: "Text on accent-colored backgrounds"
+
+  border:
+    default:
+      $value: "{core.color.neutral.800}"
+      $type: color
+      $description: "Default border for cards, inputs, dividers"
+    focus:
+      $value: "{core.color.red.500}"
+      $type: color
+      $description: "Focus ring / active border"
+    error:
+      $value: "{core.color.red.400}"
+      $type: color
+      $description: "Error state border"
+
+  status:
+    active:
+      $value: "{core.color.green.500}"
+      $type: color
+      $description: "Active / online / success indicator"
+    warning:
+      $value: "{core.color.yellow.500}"
+      $type: color
+      $description: "Warning / caution indicator"
+    danger:
+      $value: "{core.color.red.500}"
+      $type: color
+      $description: "Danger / error / inactive indicator"
+
+  intensity:
+    low:
+      $value: "{core.color.green.500}"
+      $type: color
+      $description: "Low intensity (1-3 on slider)"
+    medium:
+      $value: "{core.color.yellow.500}"
+      $type: color
+      $description: "Medium intensity (4-6 on slider)"
+    high:
+      $value: "{core.color.red.500}"
+      $type: color
+      $description: "High intensity (7-10 on slider)"
+
+# -----------------------------------------------------------------------------
+# Layer 3: Component Tokens
+# Pre-composed token sets for specific UI components.
+# Reference semantic tokens wherever possible.
+# -----------------------------------------------------------------------------
+component:
+  button:
+    primary:
+      bg:
+        $value: "{semantic.bg.accent}"
+      text:
+        $value: "{semantic.text.on-accent}"
+      radius:
+        $value: "{core.radius.md}"
+      padding-x:
+        $value: "{core.spacing.6}"
+      padding-y:
+        $value: "{core.spacing.3}"
+    secondary:
+      bg:
+        $value: "{semantic.bg.surface}"
+      border:
+        $value: "{semantic.border.default}"
+      text:
+        $value: "{semantic.text.primary}"
+      radius:
+        $value: "{core.radius.md}"
+      padding-x:
+        $value: "{core.spacing.6}"
+      padding-y:
+        $value: "{core.spacing.3}"
+    ghost:
+      bg:
+        $value: "transparent"
+      text:
+        $value: "{semantic.text.secondary}"
+      radius:
+        $value: "{core.radius.md}"
+      padding-x:
+        $value: "{core.spacing.6}"
+      padding-y:
+        $value: "{core.spacing.3}"
+
+  input:
+    bg:
+      $value: "{semantic.bg.surface}"
+    border:
+      $value: "{semantic.border.default}"
+    text:
+      $value: "{semantic.text.primary}"
+    radius:
+      $value: "{core.radius.md}"
+    padding-x:
+      $value: "{core.spacing.4}"
+    padding-y:
+      $value: "{core.spacing.3}"
+    placeholder:
+      $value: "{semantic.text.muted}"
+    focus-border:
+      $value: "{semantic.border.focus}"
+
+  chip:
+    default:
+      bg:
+        $value: "{semantic.bg.surface}"
+      border:
+        $value: "{semantic.border.default}"
+      text:
+        $value: "{semantic.text.secondary}"
+      radius:
+        $value: "{core.radius.full}"
+      padding-x:
+        $value: "{core.spacing.4}"
+      padding-y:
+        $value: "{core.spacing.1}"
+    selected:
+      bg:
+        $value: "{semantic.bg.accent}"
+      border:
+        $value: "{semantic.bg.accent}"
+      text:
+        $value: "{semantic.text.on-accent}"
+      radius:
+        $value: "{core.radius.full}"
+      padding-x:
+        $value: "{core.spacing.4}"
+      padding-y:
+        $value: "{core.spacing.1}"
+
+  slider:
+    track-bg:
+      $value: "{core.color.neutral.800}"
+    track-fill:
+      $description: "Uses intensity gradient: low (green) -> medium (yellow) -> high (red)"
+      low:
+        $value: "{semantic.intensity.low}"
+      medium:
+        $value: "{semantic.intensity.medium}"
+      high:
+        $value: "{semantic.intensity.high}"
+    thumb-bg:
+      $value: "{core.color.white}"
+    thumb-size:
+      $value: "20px"
+
+  card:
+    bg:
+      $value: "{semantic.bg.surface}"
+    border:
+      $value: "{semantic.border.default}"
+    radius:
+      $value: "{core.radius.lg}"
+    padding:
+      $value: "{core.spacing.6}"
+
+  streak:
+    icon-color:
+      $value: "{core.color.yellow.500}"
+    text-color:
+      $value: "{semantic.text.primary}"

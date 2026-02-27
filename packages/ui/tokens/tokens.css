@@ -1,0 +1,241 @@
+/* =============================================================================
+ * Diario de Autogoverno — CSS Design Tokens
+ * =============================================================================
+ * Generated from tokens.yaml
+ *
+ * Structure:
+ *   1. Core tokens     — Raw values (colors, spacing, typography, etc.)
+ *   2. Semantic tokens  — Purpose-based aliases via var() references
+ *   3. Component tokens — Pre-composed sets via semantic var() references
+ *
+ * Usage:
+ *   background-color: var(--bg-primary);
+ *   color: var(--text-primary);
+ *   border-radius: var(--radius-md);
+ * ============================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------------------
+   * Core — Colors
+   * ------------------------------------------------------------------------- */
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-red-400: #EF5350;
+  --color-red-500: #E53935;
+  --color-red-600: #C62828;
+  --color-neutral-50: #FAFAFA;
+  --color-neutral-100: #F5F5F5;
+  --color-neutral-200: #EEEEEE;
+  --color-neutral-300: #E0E0E0;
+  --color-neutral-400: #BDBDBD;
+  --color-neutral-500: #9E9E9E;
+  --color-neutral-600: #757575;
+  --color-neutral-700: #616161;
+  --color-neutral-800: #424242;
+  --color-neutral-900: #212121;
+  --color-neutral-950: #121212;
+  --color-green-500: #4CAF50;
+  --color-green-600: #388E3C;
+  --color-yellow-500: #FFC107;
+  --color-yellow-600: #F9A825;
+
+  /* ---------------------------------------------------------------------------
+   * Core — Spacing (4px base unit)
+   * ------------------------------------------------------------------------- */
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* ---------------------------------------------------------------------------
+   * Core — Typography
+   * ------------------------------------------------------------------------- */
+  --font-family-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 1.75;
+
+  /* ---------------------------------------------------------------------------
+   * Core — Border Radius
+   * ------------------------------------------------------------------------- */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---------------------------------------------------------------------------
+   * Core — Box Shadows
+   * ------------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+
+  /* ---------------------------------------------------------------------------
+   * Core — Transition Durations
+   * ------------------------------------------------------------------------- */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+
+  /* ---------------------------------------------------------------------------
+   * Core — Z-Index Scale
+   * ------------------------------------------------------------------------- */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+
+  /* ---------------------------------------------------------------------------
+   * Semantic — Backgrounds
+   * ------------------------------------------------------------------------- */
+  --bg-primary: var(--color-black);
+  --bg-secondary: var(--color-neutral-950);
+  --bg-surface: var(--color-neutral-900);
+  --bg-surface-hover: var(--color-neutral-800);
+  --bg-accent: var(--color-red-500);
+
+  /* ---------------------------------------------------------------------------
+   * Semantic — Text
+   * ------------------------------------------------------------------------- */
+  --text-primary: var(--color-white);
+  --text-secondary: var(--color-neutral-500);
+  --text-muted: var(--color-neutral-600);
+  --text-accent: var(--color-red-500);
+  --text-on-accent: var(--color-white);
+
+  /* ---------------------------------------------------------------------------
+   * Semantic — Borders
+   * ------------------------------------------------------------------------- */
+  --border-default: var(--color-neutral-800);
+  --border-focus: var(--color-red-500);
+  --border-error: var(--color-red-400);
+
+  /* ---------------------------------------------------------------------------
+   * Semantic — Status (mentee activity indicators)
+   * ------------------------------------------------------------------------- */
+  --status-active: var(--color-green-500);
+  --status-warning: var(--color-yellow-500);
+  --status-danger: var(--color-red-500);
+
+  /* ---------------------------------------------------------------------------
+   * Semantic — Intensity (emotion slider gradient)
+   * ------------------------------------------------------------------------- */
+  --intensity-low: var(--color-green-500);
+  --intensity-medium: var(--color-yellow-500);
+  --intensity-high: var(--color-red-500);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Button (Primary)
+   * ------------------------------------------------------------------------- */
+  --button-primary-bg: var(--bg-accent);
+  --button-primary-text: var(--text-on-accent);
+  --button-primary-radius: var(--radius-md);
+  --button-primary-padding-x: var(--spacing-6);
+  --button-primary-padding-y: var(--spacing-3);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Button (Secondary)
+   * ------------------------------------------------------------------------- */
+  --button-secondary-bg: var(--bg-surface);
+  --button-secondary-border: var(--border-default);
+  --button-secondary-text: var(--text-primary);
+  --button-secondary-radius: var(--radius-md);
+  --button-secondary-padding-x: var(--spacing-6);
+  --button-secondary-padding-y: var(--spacing-3);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Button (Ghost)
+   * ------------------------------------------------------------------------- */
+  --button-ghost-bg: transparent;
+  --button-ghost-text: var(--text-secondary);
+  --button-ghost-radius: var(--radius-md);
+  --button-ghost-padding-x: var(--spacing-6);
+  --button-ghost-padding-y: var(--spacing-3);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Input
+   * ------------------------------------------------------------------------- */
+  --input-bg: var(--bg-surface);
+  --input-border: var(--border-default);
+  --input-text: var(--text-primary);
+  --input-radius: var(--radius-md);
+  --input-padding-x: var(--spacing-4);
+  --input-padding-y: var(--spacing-3);
+  --input-placeholder: var(--text-muted);
+  --input-focus-border: var(--border-focus);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Chip (Default)
+   * ------------------------------------------------------------------------- */
+  --chip-default-bg: var(--bg-surface);
+  --chip-default-border: var(--border-default);
+  --chip-default-text: var(--text-secondary);
+  --chip-default-radius: var(--radius-full);
+  --chip-default-padding-x: var(--spacing-4);
+  --chip-default-padding-y: var(--spacing-1);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Chip (Selected)
+   * ------------------------------------------------------------------------- */
+  --chip-selected-bg: var(--bg-accent);
+  --chip-selected-border: var(--bg-accent);
+  --chip-selected-text: var(--text-on-accent);
+  --chip-selected-radius: var(--radius-full);
+  --chip-selected-padding-x: var(--spacing-4);
+  --chip-selected-padding-y: var(--spacing-1);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Slider (Emotion Intensity)
+   * ------------------------------------------------------------------------- */
+  --slider-track-bg: var(--color-neutral-800);
+  --slider-track-fill-low: var(--intensity-low);
+  --slider-track-fill-medium: var(--intensity-medium);
+  --slider-track-fill-high: var(--intensity-high);
+  --slider-thumb-bg: var(--color-white);
+  --slider-thumb-size: 20px;
+
+  /* ---------------------------------------------------------------------------
+   * Component — Card
+   * ------------------------------------------------------------------------- */
+  --card-bg: var(--bg-surface);
+  --card-border: var(--border-default);
+  --card-radius: var(--radius-lg);
+  --card-padding: var(--spacing-6);
+
+  /* ---------------------------------------------------------------------------
+   * Component — Streak
+   * ------------------------------------------------------------------------- */
+  --streak-icon-color: var(--color-yellow-500);
+  --streak-text-color: var(--text-primary);
+}

@@ -1,0 +1,98 @@
+name: diario-autogoverno
+version: 1.0.0
+description: "Squad para o Diário de Autogoverno — web app de registro emocional diário para advogados mentorados, com reflexões IA baseadas no Código A.D.V."
+author: Marcelo Garani
+license: MIT
+slashPrefix: diario
+domain: emotional-self-governance-journal
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  agents:
+    - entry-manager.md
+    - ai-reflection.md
+    - mentor-dashboard.md
+    - mentee-profile.md
+    - engagement.md
+  tasks:
+    # entry-manager
+    - create-entry.md
+    - list-entries.md
+    - get-entry.md
+    - validate-entry.md
+    # ai-reflection
+    - generate-reflection.md
+    - save-reflection-answers.md
+    - generate-weekly-report.md
+    - generate-briefing.md
+    - identify-patterns.md
+    # mentor-dashboard
+    - dashboard-overview.md
+    - list-mentees.md
+    - mentee-alerts.md
+    - group-insights.md
+    # mentee-profile
+    - view-profile.md
+    - mentee-evolution.md
+    - mentee-reports.md
+    - manage-notes.md
+    # engagement
+    - calculate-streak.md
+    - check-badges.md
+    - send-reminder.md
+    - progress-summary.md
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node:
+    - "@supabase/supabase-js"
+    - "@supabase/ssr"
+    - "@anthropic-ai/sdk"
+    - recharts
+    - zustand
+    - resend
+    - next-pwa
+  squads: []
+
+integrations:
+  - name: Supabase
+    purpose: PostgreSQL database, Auth, RLS
+  - name: Anthropic Claude API
+    purpose: AI reflections, weekly reports, session briefings, pattern identification
+  - name: Vercel
+    purpose: Deployment, Cron Jobs for scheduled reports
+  - name: Resend
+    purpose: Email reminders for daily registration
+
+stakeholders:
+  - name: Mentorado
+    type: primary-user
+    platform: mobile-first
+  - name: Mentor
+    type: admin-user
+    platform: desktop-first
+
+tags:
+  - emotional-intelligence
+  - legal-mentoring
+  - ai-reflections
+  - journaling
+  - codigo-adv
+
+metadata:
+  created_at: "2026-02-27T09:00:00Z"
+  designed_by: "@squad-creator (Craft)"
+  source_blueprint: "./squads/.designs/diario-autogoverno-squad-design.yaml"
