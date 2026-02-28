@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { generateAndSaveReflection } from '@/lib/services/reflection-service';
+import { requireAuth, sanitizedError } from '@/lib/api/helpers';
+import { createReflectionSchema } from '@/lib/api/schemas';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, supabase, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    const { entry_id } = await request.json();
-    if (!entry_id) {
-      return NextResponse.json({ error: 'entry_id is required' }, { status: 400 });
+    const body = await request.json();
+    const parsed = createReflectionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const { entry_id } = parsed.data;
+
+    // Verify the entry belongs to the authenticated user
+    const { data: entry } = await supabase
+      .from('daily_entries')
+      .select('id')
+      .eq('id', entry_id)
+      .eq('user_id', user!.id)
+      .single();
+
+    if (!entry) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const reflection = await generateAndSaveReflection(entry_id);
     return NextResponse.json({ id: reflection.id, questions: reflection.questions });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return sanitizedError(error);
   }
 }

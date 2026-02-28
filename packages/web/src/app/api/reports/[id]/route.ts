@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth, sanitizedError } from '@/lib/api/helpers';
 import { fetchReportById } from '@/lib/services/report-service';
 
 export async function GET(
@@ -7,16 +7,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
     const report = await fetchReportById(params.id);
     if (!report) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (report.user_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (report.user_id !== user!.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     return NextResponse.json(report);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

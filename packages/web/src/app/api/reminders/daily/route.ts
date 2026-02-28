@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { sanitizedError, getErrorMessage } from '@/lib/api/helpers';
 import { sendReminderEmail } from '@/lib/services/email-service';
 
 export async function POST(request: NextRequest) {
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest) {
         try {
           await sendReminderEmail(mentee.email, mentee.name);
           results.push({ user_id: mentee.id, status: 'sent' });
-        } catch (e: any) {
-          results.push({ user_id: mentee.id, status: 'error', message: e.message });
+        } catch (e) {
+          results.push({ user_id: mentee.id, status: 'error', message: getErrorMessage(e) });
         }
       } else {
         results.push({ user_id: mentee.id, status: 'skipped' });
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ results });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

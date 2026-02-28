@@ -1,51 +1,107 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+/**
+ * Compute the current streak (consecutive days with entries) from a list of entries.
+ * Entries must have a `date` field (YYYY-MM-DD string).
+ * Returns 0 if the most recent entry is older than yesterday.
+ */
+function computeStreak(entries: { date: string }[]): number {
+  if (entries.length === 0) return 0;
+  const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  if (dates[0] < yesterday) return 0;
+
+  let streak = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const curr = new Date(dates[i - 1]);
+    const prev = new Date(dates[i]);
+    const diffDays = (curr.getTime() - prev.getTime()) / 86400000;
+    if (diffDays === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
 export async function getDashboardOverview(mentorId: string) {
   const supabase = createServerSupabaseClient();
 
-  // Total mentees
-  const { count: totalMentees } = await supabase
-    .from('users')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'mentee');
-
-  // Entries this week (excluding mentor's own)
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  const { count: entriesThisWeek } = await supabase
-    .from('daily_entries')
-    .select('*', { count: 'exact', head: true })
-    .neq('user_id', mentorId)
-    .gte('date', weekAgo.toISOString().split('T')[0]);
+  const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-  // Engagement: mentees who registered in last 2 days
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-  const { data: activeUsers } = await supabase
-    .from('daily_entries')
-    .select('user_id')
-    .neq('user_id', mentorId)
-    .gte('date', twoDaysAgo.toISOString().split('T')[0]);
-  const uniqueActive = new Set(activeUsers?.map((u: any) => u.user_id)).size;
+  const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+
+  // Run all independent queries in parallel (4 queries total, no N+1)
+  const [
+    { count: totalMentees },
+    { count: entriesThisWeek },
+    { data: mentees },
+    { data: recentActivity },
+  ] = await Promise.all([
+    // 1. Total mentees
+    supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'mentee'),
+    // 2. Entries this week (excluding mentor's own)
+    supabase
+      .from('daily_entries')
+      .select('*', { count: 'exact', head: true })
+      .neq('user_id', mentorId)
+      .gte('date', weekAgoStr),
+    // 3. All mentees with their entries (bulk fetch via join)
+    supabase
+      .from('users')
+      .select('id, name')
+      .eq('role', 'mentee'),
+    // 4. Recent activity
+    supabase
+      .from('daily_entries')
+      .select('id, date, category, emotion, intensity, user_id, users!inner(name)')
+      .neq('user_id', mentorId)
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ]);
+
+  // Fetch all mentee entries in one bulk query to compute engagement + alerts
+  const menteeIds = (mentees ?? []).map((m: any) => m.id);
+  let allMenteeEntries: any[] = [];
+  if (menteeIds.length > 0) {
+    const { data } = await supabase
+      .from('daily_entries')
+      .select('user_id, date')
+      .in('user_id', menteeIds)
+      .order('date', { ascending: false });
+    allMenteeEntries = data ?? [];
+  }
+
+  // Group entries by user_id
+  const entriesByUser = new Map<string, { date: string }[]>();
+  for (const entry of allMenteeEntries) {
+    if (!entriesByUser.has(entry.user_id)) {
+      entriesByUser.set(entry.user_id, []);
+    }
+    entriesByUser.get(entry.user_id)!.push({ date: entry.date });
+  }
+
+  // Engagement: mentees who registered in last 2 days
+  const uniqueActive = new Set(
+    allMenteeEntries
+      .filter((e: any) => e.date >= twoDaysAgoStr)
+      .map((e: any) => e.user_id)
+  ).size;
   const engagementPct = totalMentees ? Math.round((uniqueActive / totalMentees) * 100) : 0;
 
-  // Alerts: mentees inactive 3+ days
-  const { data: mentees } = await supabase
-    .from('users')
-    .select('id, name')
-    .eq('role', 'mentee');
-
+  // Alerts: mentees inactive 3+ days (computed from grouped entries, no per-mentee queries)
   const alerts: { id: string; menteeName: string; daysInactive: number }[] = [];
   if (mentees) {
     for (const mentee of mentees) {
-      const { data: lastEntry } = await supabase
-        .from('daily_entries')
-        .select('date')
-        .eq('user_id', mentee.id)
-        .order('date', { ascending: false })
-        .limit(1);
-
-      const lastDate = lastEntry?.[0]?.date;
+      const userEntries = entriesByUser.get(mentee.id);
+      const lastDate = userEntries?.[0]?.date; // already sorted desc
       const daysInactive = lastDate
         ? Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24))
         : 999;
@@ -56,14 +112,6 @@ export async function getDashboardOverview(mentorId: string) {
     }
     alerts.sort((a, b) => b.daysInactive - a.daysInactive);
   }
-
-  // Recent activity
-  const { data: recentActivity } = await supabase
-    .from('daily_entries')
-    .select('id, date, category, emotion, intensity, user_id, users!inner(name)')
-    .neq('user_id', mentorId)
-    .order('created_at', { ascending: false })
-    .limit(10);
 
   return {
     total_mentees: totalMentees ?? 0,
@@ -85,24 +133,68 @@ export async function getDashboardOverview(mentorId: string) {
 export async function getMenteesList(mentorId: string) {
   const supabase = createServerSupabaseClient();
 
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().split('T')[0];
+
+  // 1. Fetch all mentees in one query
   const { data: mentees } = await supabase
     .from('users')
     .select('id, name, email, created_at')
     .eq('role', 'mentee');
 
-  if (!mentees) return [];
+  if (!mentees || mentees.length === 0) return [];
 
-  const result = [];
-  for (const mentee of mentees) {
-    // Last entry
-    const { data: lastEntry } = await supabase
+  const menteeIds = mentees.map(m => m.id);
+
+  // 2 & 3. Fetch all entries for all mentees in parallel (2 queries total)
+  const [
+    { data: recentEntries },
+    { data: streakEntries },
+  ] = await Promise.all([
+    // Recent entries (last 7 days) for avg intensity computation
+    supabase
       .from('daily_entries')
-      .select('date')
-      .eq('user_id', mentee.id)
-      .order('date', { ascending: false })
-      .limit(1);
+      .select('user_id, date, intensity')
+      .in('user_id', menteeIds)
+      .gte('date', weekAgoStr)
+      .order('date', { ascending: false }),
+    // Entries for streak computation (last 90 days)
+    supabase
+      .from('daily_entries')
+      .select('user_id, date')
+      .in('user_id', menteeIds)
+      .gte('date', ninetyDaysAgoStr)
+      .order('date', { ascending: false }),
+  ]);
 
-    const lastEntryDate = lastEntry?.[0]?.date ?? null;
+  // Group recent entries by user_id (for avg intensity + last entry date)
+  const recentByUser = new Map<string, { date: string; intensity: number }[]>();
+  for (const entry of (recentEntries ?? [])) {
+    if (!recentByUser.has(entry.user_id)) {
+      recentByUser.set(entry.user_id, []);
+    }
+    recentByUser.get(entry.user_id)!.push({ date: entry.date, intensity: entry.intensity });
+  }
+
+  // Group streak entries by user_id (for streak computation + last entry date)
+  const streakByUser = new Map<string, { date: string }[]>();
+  for (const entry of (streakEntries ?? [])) {
+    if (!streakByUser.has(entry.user_id)) {
+      streakByUser.set(entry.user_id, []);
+    }
+    streakByUser.get(entry.user_id)!.push({ date: entry.date });
+  }
+
+  // Build result in JS — no per-mentee queries
+  const result = mentees.map(mentee => {
+    // Last entry date from streak entries (sorted desc, covers 90 days)
+    const userStreakEntries = streakByUser.get(mentee.id) ?? [];
+    const lastEntryDate = userStreakEntries.length > 0 ? userStreakEntries[0].date : null;
     const daysInactive = lastEntryDate
       ? Math.floor((Date.now() - new Date(lastEntryDate).getTime()) / (1000 * 60 * 60 * 24))
       : 999;
@@ -113,24 +205,16 @@ export async function getMenteesList(mentorId: string) {
     else if (daysInactive <= 5) status = 'absent';
     else status = 'inactive';
 
-    // Streak
-    const { data: streakData } = await supabase.rpc('get_user_streak', { p_user_id: mentee.id });
-    const streak = streakData?.[0]?.current_streak ?? 0;
+    // Streak (computed in JS instead of RPC)
+    const streak = computeStreak(userStreakEntries);
 
     // Avg intensity this week
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const { data: weekEntries } = await supabase
-      .from('daily_entries')
-      .select('intensity')
-      .eq('user_id', mentee.id)
-      .gte('date', weekAgo.toISOString().split('T')[0]);
-
-    const avgIntensity = weekEntries && weekEntries.length > 0
-      ? weekEntries.reduce((s: number, e: any) => s + e.intensity, 0) / weekEntries.length
+    const weekEntries = recentByUser.get(mentee.id) ?? [];
+    const avgIntensity = weekEntries.length > 0
+      ? weekEntries.reduce((s, e) => s + e.intensity, 0) / weekEntries.length
       : 0;
 
-    result.push({
+    return {
       id: mentee.id,
       name: mentee.name,
       email: mentee.email,
@@ -140,8 +224,8 @@ export async function getMenteesList(mentorId: string) {
       avg_intensity_week: Math.round(avgIntensity * 10) / 10,
       status,
       days_inactive: daysInactive,
-    });
-  }
+    };
+  });
 
   // Sort: inactive first
   result.sort((a, b) => {

@@ -1,30 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireMentor, sanitizedError } from '@/lib/api/helpers';
+import { generateBriefingSchema } from '@/lib/api/schemas';
 import { generateAndSaveBriefing } from '@/lib/services/briefing-service';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { mentorId, error } = await requireMentor();
+    if (error) return error;
 
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    if (profile?.role !== 'mentor') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const body = await request.json();
+    const parsed = generateBriefingSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { mentee_id } = await request.json();
-    if (!mentee_id) {
-      return NextResponse.json({ error: 'mentee_id is required' }, { status: 400 });
-    }
-
-    const briefing = await generateAndSaveBriefing(user.id, mentee_id);
+    const briefing = await generateAndSaveBriefing(mentorId!, parsed.data.mentee_id);
     return NextResponse.json(briefing);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

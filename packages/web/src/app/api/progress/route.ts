@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth, sanitizedError } from '@/lib/api/helpers';
 import { getUserStreak, getUserBadges } from '@/lib/db/badges';
 import { getEntryCount } from '@/lib/db/entries';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, supabase, error } = await requireAuth();
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'month';
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { data: entries } = await supabase
       .from('daily_entries')
       .select('date, intensity, category, emotion, self_perception')
-      .eq('user_id', user.id)
+      .eq('user_id', user!.id)
       .gte('date', startDate.toISOString().split('T')[0])
       .order('date', { ascending: true });
 
@@ -69,9 +68,9 @@ export async function GET(request: NextRequest) {
       unsure_pct: Math.round((data.unsure / data.total) * 100),
     }));
 
-    const streak = await getUserStreak(user.id);
-    const badges = await getUserBadges(user.id);
-    const totalEntries = await getEntryCount(user.id);
+    const streak = await getUserStreak(user!.id);
+    const badges = await getUserBadges(user!.id);
+    const totalEntries = await getEntryCount(user!.id);
 
     return NextResponse.json({
       intensity_by_week: intensityByWeek,
@@ -82,7 +81,7 @@ export async function GET(request: NextRequest) {
       total_entries: totalEntries,
       badges,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

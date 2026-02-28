@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth, sanitizedError } from '@/lib/api/helpers';
 import { getUserStreak } from '@/lib/db/badges';
 
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    const streak = await getUserStreak(user.id);
+    const streak = await getUserStreak(user!.id);
     return NextResponse.json(streak);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

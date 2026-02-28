@@ -4,6 +4,12 @@
 
 // --- Mocks (jest.mock is hoisted, so use inline factories) -----------
 
+const mockSingle = jest.fn();
+const mockEq2 = jest.fn(() => ({ single: mockSingle }));
+const mockEq1 = jest.fn(() => ({ eq: mockEq2 }));
+const mockSelect = jest.fn(() => ({ eq: mockEq1 }));
+const mockFrom = jest.fn(() => ({ select: mockSelect }));
+
 jest.mock('next/server', () => ({
   NextRequest: jest.fn().mockImplementation(function (this: any, input: string | URL, init?: any) {
     const url = typeof input === 'string' ? new URL(input, 'http://localhost:3000') : input;
@@ -24,6 +30,7 @@ const mockGetUser = jest.fn();
 jest.mock('@/lib/supabase/server', () => ({
   createServerSupabaseClient: jest.fn(() => ({
     auth: { getUser: mockGetUser },
+    from: mockFrom,
   })),
 }));
 
@@ -40,6 +47,8 @@ import { NextRequest } from 'next/server';
 
 // --- Helpers ---------------------------------------------------------
 
+const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
+
 function buildRequest(body?: Record<string, unknown>) {
   return new NextRequest('http://localhost:3000/api/reflections', {
     method: 'POST',
@@ -55,7 +64,7 @@ describe('POST /api/reflections', () => {
   it('returns 401 when user is not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const res = await POST(buildRequest({ entry_id: 'e1' }));
+    const res = await POST(buildRequest({ entry_id: VALID_UUID }));
 
     expect(res.status).toBe(401);
     const json = await res.json();
@@ -69,11 +78,33 @@ describe('POST /api/reflections', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error).toBe('entry_id is required');
+    expect(json.error).toBeDefined();
+  });
+
+  it('returns 400 when entry_id is not a valid UUID', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+
+    const res = await POST(buildRequest({ entry_id: 'not-a-uuid' }));
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBeDefined();
+  });
+
+  it('returns 403 when entry does not belong to user', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockSingle.mockResolvedValue({ data: null });
+
+    const res = await POST(buildRequest({ entry_id: VALID_UUID }));
+
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toBe('Forbidden');
   });
 
   it('returns reflection id and questions on success', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockSingle.mockResolvedValue({ data: { id: VALID_UUID } });
     mockGenerateAndSaveReflection.mockResolvedValue({
       id: 'ref-1',
       questions: [
@@ -82,20 +113,21 @@ describe('POST /api/reflections', () => {
       ],
     });
 
-    const res = await POST(buildRequest({ entry_id: 'entry-42' }));
+    const res = await POST(buildRequest({ entry_id: VALID_UUID }));
 
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.id).toBe('ref-1');
     expect(json.questions).toHaveLength(2);
-    expect(mockGenerateAndSaveReflection).toHaveBeenCalledWith('entry-42');
+    expect(mockGenerateAndSaveReflection).toHaveBeenCalledWith(VALID_UUID);
   });
 
   it('returns 500 when service throws', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockSingle.mockResolvedValue({ data: { id: VALID_UUID } });
     mockGenerateAndSaveReflection.mockRejectedValue(new Error('Entry not found'));
 
-    const res = await POST(buildRequest({ entry_id: 'bad-id' }));
+    const res = await POST(buildRequest({ entry_id: VALID_UUID }));
 
     expect(res.status).toBe(500);
     const json = await res.json();

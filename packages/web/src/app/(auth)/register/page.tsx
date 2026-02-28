@@ -8,8 +8,6 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, Input, Heading, Text } from '@diario/ui';
 
-const VALID_INVITE_CODES = ['AUTOGOVERNO2026', 'RAFAEL-MENTOR'];
-
 function RegisterForm() {
   const searchParams = useSearchParams();
   const [inviteCode, setInviteCode] = useState(searchParams.get('invite') || '');
@@ -25,8 +23,19 @@ function RegisterForm() {
     e.preventDefault();
     setError('');
 
-    if (!VALID_INVITE_CODES.includes(inviteCode.toUpperCase())) {
-      setError('Código de convite inválido.');
+    try {
+      const res = await fetch('/api/auth/validate-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inviteCode }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || 'Código de convite inválido.');
+        return;
+      }
+    } catch {
+      setError('Erro ao validar código de convite. Tente novamente.');
       return;
     }
 

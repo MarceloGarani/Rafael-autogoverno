@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
+import { requireAuth, sanitizedError, getErrorMessage } from '@/lib/api/helpers';
 import { generateAndSaveWeeklyReport } from '@/lib/services/report-service';
 
 export async function POST(request: NextRequest) {
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest) {
         try {
           const report = await generateAndSaveWeeklyReport(user.id);
           results.push({ user_id: user.id, status: 'ok', report_id: report.id });
-        } catch (e: any) {
-          results.push({ user_id: user.id, status: 'error', message: e.message });
+        } catch (e) {
+          results.push({ user_id: user.id, status: 'error', message: getErrorMessage(e) });
         }
       }
 
@@ -28,13 +29,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Manual generation
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    const report = await generateAndSaveWeeklyReport(user.id);
+    const report = await generateAndSaveWeeklyReport(user!.id);
     return NextResponse.json(report);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }

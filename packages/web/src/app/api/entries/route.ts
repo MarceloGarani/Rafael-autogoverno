@@ -1,61 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth, sanitizedError, clampLimit } from '@/lib/api/helpers';
+import { createEntrySchema } from '@/lib/api/schemas';
 import { submitEntry, fetchEntries } from '@/lib/services/entry-service';
-import type { EntryCategory, EntryEmotion, SelfPerceptionType } from '@/types/database';
+import type { EntryCategory, EntryEmotion } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
     const body = await request.json();
-    const { situation, category, emotion, intensity, reaction, self_perception } = body;
-
-    if (!situation || situation.length < 10) {
-      return NextResponse.json({ error: 'Situação deve ter pelo menos 10 caracteres' }, { status: 400 });
-    }
-    if (!category || !emotion || !intensity || !reaction || reaction.length < 10 || !self_perception) {
-      return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 });
-    }
-    if (intensity < 1 || intensity > 10) {
-      return NextResponse.json({ error: 'Intensidade deve ser entre 1 e 10' }, { status: 400 });
+    const parsed = createEntrySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { entry, newBadges } = await submitEntry(user.id, {
+    const { situation, category, emotion, intensity, reaction, self_perception } = parsed.data;
+
+    const { entry, newBadges } = await submitEntry(user!.id, {
       situation,
-      category: category as EntryCategory,
-      emotion: emotion as EntryEmotion,
+      category,
+      emotion,
       intensity,
       reaction,
-      self_perception: self_perception as SelfPerceptionType,
+      self_perception,
     });
 
     return NextResponse.json({ id: entry.id, status: 'created', newBadges });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const result = await fetchEntries(user.id, {
+    const result = await fetchEntries(user!.id, {
       period: (searchParams.get('period') as 'week' | 'month' | 'custom') || undefined,
       start_date: searchParams.get('start_date') || undefined,
       end_date: searchParams.get('end_date') || undefined,
       category: (searchParams.get('category') as EntryCategory) || undefined,
       emotion: (searchParams.get('emotion') as EntryEmotion) || undefined,
       page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      limit: clampLimit(searchParams.get('limit')),
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return sanitizedError(error);
   }
 }
