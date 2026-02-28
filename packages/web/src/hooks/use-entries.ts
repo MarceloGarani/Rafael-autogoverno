@@ -41,6 +41,7 @@ export function useCreateEntry() {
 
   return useMutation({
     mutationFn: async (data: {
+      date: string;
       situation: string;
       category: string;
       emotion: string;

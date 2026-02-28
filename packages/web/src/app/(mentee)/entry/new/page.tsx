@@ -28,6 +28,7 @@ export default function NewEntryPage() {
 
     try {
       const result = await createEntry.mutateAsync({
+        date: new Date().toISOString().split('T')[0],
         situation: data.situation,
         category: categoryMap[data.category] || 'outro',
         emotion: data.emotion,
