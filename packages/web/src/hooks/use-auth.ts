@@ -13,36 +13,47 @@ export function useAuth() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setAuthUser(user);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setAuthUser(user);
 
-      if (user) {
-        const { data } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setProfile(data);
+        if (user) {
+          const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          setProfile(data);
+        }
+      } catch {
+        setAuthUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setAuthUser(session?.user ?? null);
-        if (session?.user) {
-          const { data } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setProfile(data);
-        } else {
+        try {
+          setAuthUser(session?.user ?? null);
+          if (session?.user) {
+            const { data } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            setProfile(data);
+          } else {
+            setProfile(null);
+          }
+        } catch {
           setProfile(null);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
