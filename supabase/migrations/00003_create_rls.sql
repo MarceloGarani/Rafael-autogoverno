@@ -7,16 +7,22 @@ ALTER TABLE public.mentor_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_briefings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to check mentor role (SECURITY DEFINER bypasses RLS, avoids infinite recursion)
+CREATE OR REPLACE FUNCTION public.is_mentor()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = auth.uid() AND role = 'mentor'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 -- Users: can read own profile
 CREATE POLICY "users_read_own" ON public.users FOR SELECT
     USING (auth.uid() = id);
 
--- Users: mentor can read all mentees
+-- Users: mentor can read all mentees (uses is_mentor() to avoid recursion)
 CREATE POLICY "mentor_read_mentees" ON public.users FOR SELECT
-    USING (
-        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'mentor')
-        AND role = 'mentee'
-    );
+    USING (is_mentor() AND role = 'mentee');
 
 -- Users: can update own profile
 CREATE POLICY "users_update_own" ON public.users FOR UPDATE
@@ -36,10 +42,7 @@ CREATE POLICY "entries_own_insert" ON public.daily_entries FOR INSERT
 
 -- Daily Entries: mentor read mentee entries (NOT own)
 CREATE POLICY "mentor_read_mentee_entries" ON public.daily_entries FOR SELECT
-    USING (
-        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'mentor')
-        AND user_id != auth.uid()
-    );
+    USING (is_mentor() AND user_id != auth.uid());
 
 -- AI Reflections: via entry ownership
 CREATE POLICY "reflections_own_read" ON public.ai_reflections FOR SELECT
@@ -60,10 +63,9 @@ CREATE POLICY "reflections_own_update" ON public.ai_reflections FOR UPDATE
 -- AI Reflections: mentor can read mentee reflections
 CREATE POLICY "mentor_read_mentee_reflections" ON public.ai_reflections FOR SELECT
     USING (
-        EXISTS (
+        is_mentor() AND EXISTS (
             SELECT 1 FROM public.daily_entries de
-            JOIN public.users u ON u.id = auth.uid()
-            WHERE de.id = entry_id AND u.role = 'mentor' AND de.user_id != auth.uid()
+            WHERE de.id = entry_id AND de.user_id != auth.uid()
         )
     );
 
@@ -76,10 +78,7 @@ CREATE POLICY "reports_own_insert" ON public.weekly_reports FOR INSERT
 
 -- Weekly Reports: mentor read mentee reports
 CREATE POLICY "mentor_read_mentee_reports" ON public.weekly_reports FOR SELECT
-    USING (
-        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'mentor')
-        AND user_id != auth.uid()
-    );
+    USING (is_mentor() AND user_id != auth.uid());
 
 -- Mentor Notes: mentor can manage own notes
 CREATE POLICY "mentor_notes_own" ON public.mentor_notes FOR ALL
